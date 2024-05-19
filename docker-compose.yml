@@ -1,0 +1,23 @@
+version: "3.7"
+services:
+  app:
+    container_name: web-robo8
+    build: ./docker/nodeJs/
+    ports:
+      - 3000:3000
+    working_dir: /var/www/app
+    volumes:
+      - ./app:/var/www/app
+    command: >
+        bash -c "npx pm2 start app.mjs && bash"
+    tty: true
+    env_file:
+      - ./.env
+    init: true
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./data/redis:/data"
+  

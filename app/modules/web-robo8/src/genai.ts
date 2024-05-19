@@ -1,0 +1,59 @@
+
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+
+export class GenAi 
+{
+  prompt: string
+  pageContent: string
+  genai: ChatGoogleGenerativeAI
+  generated: string
+
+  constructor(init :Partial<GenAi>) 
+  {
+    this.prompt = init.prompt ?? ''
+    this.pageContent = init.pageContent ?? ''
+    this.genai = new ChatGoogleGenerativeAI(
+      {
+        model: 'gemini-pro',
+        maxOutputTokens: 2048,
+      }
+    )
+    this.generated = ''
+  }
+
+  private async invoke()
+  {
+    const res = await this.genai.invoke(
+      [
+        [
+          'human',
+          `
+          ${this.prompt}
+          [コンテンツ]
+          ${this.pageContent}
+          `,
+        ],
+      ]
+    )
+    this.generated = (res.content as string)
+  }
+
+  // todo 
+  public isValid(): boolean
+  {
+    return true
+  }
+
+  public async generateJsCode()
+  {
+    if (!this.isValid()) return ''
+    
+    await this.invoke()
+    this.generated = this.generated.replace("```", "")
+    this.generated = this.generated.replace("javascript", "")
+    this.generated = this.generated.replace("```", "")
+  
+    return this.generated 
+  }
+
+}
