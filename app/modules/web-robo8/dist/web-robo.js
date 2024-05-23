@@ -14,14 +14,17 @@ export class WebRobo8 {
     constructor(init) {
         var _a, _b, _c;
         this.url = (_a = init.url) !== null && _a !== void 0 ? _a : '';
-        this.prompt = (_b = init.prompt) !== null && _b !== void 0 ? _b : '';
+        this.prompts = (_b = init.prompts) !== null && _b !== void 0 ? _b : [];
         this.promptCode = (_c = init.promptCode) !== null && _c !== void 0 ? _c : '';
-        this.pageContent = '';
-        this.generatedJsCode = '';
+        this.prompts = this.prompts.map(v => {
+            if (!v.selector)
+                v.selector = '*';
+            return v;
+        });
     }
-    getHtmlByUrl() {
+    createBrowser() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.browser = yield puppeteer.launch({
+            return yield puppeteer.launch({
                 headless: 'new',
                 args: [
                     '--no-sandbox',
@@ -30,44 +33,62 @@ export class WebRobo8 {
                     '--single-process'
                 ]
             });
-            this.page = yield this.browser.newPage();
-            yield this.page.goto(this.url);
-            this.pageContent = yield this.page.$eval('*', (el) => el.innerHTML);
+        });
+    }
+    createPage() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let page = yield this.browser.newPage();
+            yield page.goto(this.url);
+            return page;
         });
     }
     // todo 
     isValid() {
         return true;
     }
-    generateJsCodeByGenAi() {
+    generateJsCodeByGenAi(prompt, targetElem) {
         return __awaiter(this, void 0, void 0, function* () {
             let genAi = new GenAi({
-                prompt: this.prompt,
-                pageContent: this.pageContent
+                prompt: prompt,
+                pageContent: targetElem
             });
-            this.generatedJsCode = yield genAi.generateJsCode();
+            return yield genAi.generateJsCode();
         });
     }
-    execJsCode() {
+    execJsCode(jsCode) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.page.evaluate((jsCode) => {
                 eval(`${jsCode}`);
-            }, this.generatedJsCode);
+            }, jsCode);
         });
     }
     output() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isValid())
                 return {};
-            let text = '';
+            let targetElem = '';
+            let jsCode = '';
+            let output = {
+                promptCode: this.promptCode,
+                data: []
+            };
             try {
-                // 指定されたURlからHTML取得
-                yield this.getHtmlByUrl().catch(value => { throw new Error(value); });
-                // AIがプロンプトとHTMLを解析してJSコード生成
-                yield this.generateJsCodeByGenAi().catch(value => { throw new Error(value); });
-                // 生成されたJSコードを実行
-                yield this.execJsCode().catch(value => { throw new Error(value); });
-                text = yield this.page.$eval('*', (el) => el.innerText);
+                this.browser = yield this.createBrowser().catch(value => { throw new Error(value); });
+                this.page = yield this.createPage().catch(value => { throw new Error(value); });
+                for (let i = 0; i < this.prompts.length; i++) {
+                    // 操作対象のHTML要素取得
+                    targetElem = yield this.page.$eval(this.prompts[i].selector, (el) => el.innerHTML);
+                    // HTNLとプロンプトからAIがjavascriptコードを生成
+                    jsCode = yield this.generateJsCodeByGenAi(this.prompts[i].prompt, targetElem).catch(value => { throw new Error(value); });
+                    // 生成されたコードを実行
+                    yield this.execJsCode(jsCode).catch(value => { throw new Error(value); });
+                    output.data[i] = {
+                        text: yield this.page.$eval(this.prompts[i].selector, (el) => el.innerText),
+                        jsCode: jsCode
+                    };
+                    targetElem = '';
+                    jsCode = '';
+                }
                 yield this.page.close();
                 yield this.browser.close();
             }
@@ -78,15 +99,11 @@ export class WebRobo8 {
                     errors: {
                         message: e.message,
                         promptCode: this.promptCode,
-                        jsCode: this.generatedJsCode
+                        jsCode: jsCode
                     }
                 });
             }
-            return {
-                text: text,
-                promptCode: this.promptCode,
-                jsCode: this.generatedJsCode
-            };
+            return output;
         });
     }
 }

@@ -1,8 +1,8 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import  Redis from 'ioredis'
-import { WebRobo8 } from "./modules/web-robo8/index.js"
-import  randomstring from "randomstring"
+import { WebRobo8 } from './modules/web-robo8/index.js'
+import  randomstring from 'randomstring'
 import { check, validationResult } from 'express-validator'
 
 const app = express()
@@ -20,6 +20,7 @@ const STATUS_ERROR = 'error'
 const STATUS_DONE = 'done'
 const STATUS_SUCCESS = 'success'
 
+app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 let router = express.Router()
@@ -60,12 +61,12 @@ router.post('/prompt', async (req, res) =>
           .notEmpty().withMessage('required url')
           .custom(v => URL.canParse(v)).withMessage('invalid url')
           .run(req)
-  await check('prompt')
-          .notEmpty().withMessage('required prompt')
-          .run(req)
-  const result = validationResult(req)
+  // await check('prompt')
+  //         .notEmpty().withMessage('required prompt')
+  //         .run(req)
+  // const result = validationResult(req)
 
-  if (!result.isEmpty()) return res.status(400).json({ errors: result.array() })
+  // if (!result.isEmpty()) return res.status(400).json({ errors: result.array() })
 
   const promptCode = randomstring.generate(10)
   const prompt_length = await redis.hlen(PROMPT_CASHE_HASH_KEY)
@@ -79,7 +80,7 @@ router.post('/prompt', async (req, res) =>
   new WebRobo8(
     {
       url: req.body.url,
-      prompt: req.body.prompt,
+      prompts: req.body.prompts,
       promptCode: promptCode
     }
   )
@@ -91,7 +92,7 @@ router.post('/prompt', async (req, res) =>
       { 
         promptCode: value.promptCode,
         status: STATUS_DONE,
-        data: [{ text: value.text, jsCode: value.jsCode }],
+        data: value.data,
         message: 'OK',
       }
     ))
@@ -131,33 +132,8 @@ app.delete('/prompt', async (req, res) =>
 
 app.get('/sample', (req, res) => 
 {
-  res.send(`
-  <html>
-  <body>
-    <a class="test">こちら</a>
-    <div>
-      <span>名前</span>
-      <input type="text" class="test-name" id="sample" name="sample" />
-    </div>
-    <div>
-      <span>電話番号</span>
-      <input type="text" class="test-tel" id="sample" name="sample" />
-    </div>
-    <span class="test1"></span>
-    <span class="test2"></span>
-  </body>
-  <script>
-    document.querySelectorAll(".test")[0].addEventListener('click', function(){ 
-      document.querySelectorAll(".test1")[0].innerText = document.querySelectorAll(".test-name")[0].value;
-      document.querySelectorAll(".test2")[0].innerText = document.querySelectorAll(".test-tel")[0].value;
-    });
-  </script>
-
-</html>
-  `)
+  res.render("/var/www/app/views/index.ejs");
 });
-
-
 
 app.listen(3000, () => 
 {

@@ -34,8 +34,6 @@ curl -H "Content-Type: application/json" --data @sample.json http://localhost:30
 ```
 - プロンプト内容
 ```
-コンテンツのHTMLを解析して、操作のjavascriptコードを上から順に生成してください。※コードのみ生成してください。
-[操作]
 - 名前の入力ボックスに「ぽんたく」と入力する
 - 電話番号の入力ボックスに「090000000」と入力する
 - こちらのリンクをクリックする
@@ -89,29 +87,25 @@ curl -X GET http://localhost:3000/prompt
 レスポンス例
 ```json
 [
-  {
-    "promptCode":"CETpVQTUA4",
-    "status":"done",
-    "data":[
-      {
-        "text":"こちら\n名前 \n電話番号 \nあかさか 090000000","jsCode":"\ndocument.querySelectorAll(\".test-name\")[0].value = \"あかさか\";\ndocument.querySelectorAll(\".test-tel\")[0].value = \"090000000\";\ndocument.querySelectorAll(\".test\")[0].click();\n"
-      }
-    ],
-    "message":"OK"
-  },
-  {
-    "promptCode":"t77liZeCXW",
-    "status":"done",
-    "data": [
-      {
-        "text":"こちら\n名前 \n電話番号 \nあかさか 090000000",
-        "jsCode":"\n// 名前の入力ボックスに「あかさか」と入力する\ndocument.querySelector(\".test-name\").value = \"あかさか\";\n\n// 電話番号の入力ボックスに「090000000」と入力する\ndocument.querySelector(\".test-tel\").value = \"090000000\";\n\n// こちらのリンクをクリックする\ndocument.querySelector(\".test\").click();\n"
-      }
-    ],
-    "message":"OK"
-  }
-]
-
+    {
+        "promptCode": "Zxb5rmAoq8",
+        "status": "done",
+        "data": [
+            {
+                "text": "名前 \n電話番号 \nあかさか 090000000\n送信",
+                "jsCode": "\n// 名前を入力ボックスに設定\ndocument.querySelector('.test-name')....続く"
+            },
+            {
+                "text": "性別 男性 女性\n生年月日 \n2024\n2023\n2022\n .... 女性 2024331",
+                "jsCode": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]')...続く"
+            }
+        ],
+        "message": "OK"
+    },
+    {
+        "promptCode": "3rjxV7HIsy",
+        "status": "done"
+....続く
 ```
 promptCode: <code style="color:gray">String</code><br>
 プロンプトの識別コード
@@ -147,15 +141,19 @@ promptCode: <code style="color:gray">String</code><br>
 レスポンス例
 ```json
 {
-  "promptCode":"CETpVQTUA4",
-  "status":"done",
-  "data": [
-    {
-      "text":"こちら\n名前 \n電話番号 \nあかさか 090000000",
-      "jsCode":"\ndocument.querySelectorAll(\".test-name\")[0].value = \"あかさか\";\ndocument.querySelectorAll(\".test-tel\")[0].value = \"090000000\";\ndocument.querySelectorAll(\".test\")[0].click();\n"
-    }
-  ],
-  "message":"OK"
+    "promptCode": "Zxb5rmAoq8",
+    "status": "done",
+    "data": [
+        {
+            "text": "名前 \n電話番号 \nあかさか 090000000\n送信",
+            "jsCode": "\n// 名前を入力ボックスに設定\ndocument.querySelector('.test-name')...続く"
+        },
+        {
+            "text": "性別 男性 女性\n生年月日 ...女性 2024331",
+            "jsCode": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]')...続く"
+        }
+    ],
+    "message": "OK"
 }
 ```
 promptCode: <code style="color:gray">String</code><br>
@@ -181,7 +179,20 @@ POST /prompt
 ```
 リクエストの例
 ```shell
-curl -X POST -H "Content-Type: application/json" -d "{\"url\":\"http://localhost:3000/sample\", \"prompt\": \"コンテンツをHTMLを解析して、操作のjavascriptコードを上から順に...\"}" http://localhost:3000/prompt
+curl -X POST -H "Content-Type: application/json" -d "
+  {
+    "url":"http://localhost:3000/sample", 
+    "prompts": [
+      { 
+        "selector": ".test-a", 
+        "prompt": "- 名前の入力ボックスに「あかさか」と入力する"....続く 
+      },
+      { 
+        "selector": ".test-b", 
+        "prompt": "- 性別のラジオボタンを「女性」"....続く 
+      }
+    ]
+  }" http://localhost:3000/prompt
 ```
 ### リクエストヘッダー
 - - -
@@ -193,15 +204,16 @@ application/json
 url: <code style="color:gray">String</code><br>
 ロボを動かすページのURL
 - - -
-prompt: <code style="color:gray">String</code><br>
-ロボへの指示<br>
-※ロボへの指示には以下のプロンプトテンプレートに沿って指示を出してください。(操作1,2,3は自由入力で、コンテンツの〜[操作]までは固定文言)
+prompts.*.selector: <code style="color:gray">String</code><br>
+ロボ操作対象の要素<br>
+※指定なしの場合は全ての要素が対象
+- - -
+prompts.*.prompt: <code style="color:gray">String</code><br>
+ロボへの指示例<br>
 ```
-コンテンツのHTMLを解析して、操作のjavascriptコードを上から順に生成してください。※コードのみ生成
-[操作]
- - 操作1
- - 操作2
- - 操作3
+ - 名前の入力ボックスに「ぽんたく」と入力する
+ - 性別のラジオボタンを「女性」を選択
+ - 生年月日「2024/3/31」を選択
 ```
 - - -
 ### レスポンス

@@ -25,6 +25,8 @@ export class GenAi {
                 [
                     'human',
                     `
+          コンテンツのHTMLを解析して、操作のjavascriptコードを上から順に生成してください。※javascriptコードのみ生成
+          [操作]
           ${this.prompt}
           [コンテンツ]
           ${this.pageContent}
