@@ -61,12 +61,16 @@ router.post('/prompt', async (req, res) =>
           .notEmpty().withMessage('required url')
           .custom(v => URL.canParse(v)).withMessage('invalid url')
           .run(req)
-  // await check('prompt')
-  //         .notEmpty().withMessage('required prompt')
-  //         .run(req)
-  // const result = validationResult(req)
+  await check('prompts')
+           .notEmpty().withMessage('required prompts')
+           .run(req)
+  await check("prompts.*.prompt")  
+          .notEmpty().withMessage('required prompts.*.prompt')
+          .run(req)
 
-  // if (!result.isEmpty()) return res.status(400).json({ errors: result.array() })
+  const result = validationResult(req)
+
+  if (!result.isEmpty()) return res.status(400).json({ errors: result.array() })
 
   const promptCode = randomstring.generate(10)
   const prompt_length = await redis.hlen(PROMPT_CASHE_HASH_KEY)

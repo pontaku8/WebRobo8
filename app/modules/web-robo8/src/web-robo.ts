@@ -9,6 +9,7 @@ export class WebRobo8
   prompts: {
     selector: string,
     prompt: string,
+    sleepTime: number
   }[]
   browser: any
   page: any
@@ -24,6 +25,8 @@ export class WebRobo8
     this.prompts = this.prompts.map(v => 
     {
       if (!v.selector) v.selector = '*'
+      if (!v.sleepTime) v.sleepTime = 0
+
       return v
     })
 
@@ -101,7 +104,7 @@ export class WebRobo8
 
     try 
     {
-
+      const sleep = (time: number) => new Promise((p) => setTimeout(p, time));
       this.browser = await this.createBrowser().catch(value => { throw new Error(value) })
       this.page = await this.createPage().catch(value => { throw new Error(value) })
 
@@ -117,6 +120,8 @@ export class WebRobo8
           text: await this.page.$eval(this.prompts[i].selector, (el: Element) => (el as HTMLElement).innerText),
           jsCode: jsCode
         }
+
+        await sleep(this.prompts[i].sleepTime * 1000)
         targetElem = ''
         jsCode = ''
       }

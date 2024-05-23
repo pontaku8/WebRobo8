@@ -19,6 +19,8 @@ export class WebRobo8 {
         this.prompts = this.prompts.map(v => {
             if (!v.selector)
                 v.selector = '*';
+            if (!v.sleepTime)
+                v.sleepTime = 0;
             return v;
         });
     }
@@ -73,6 +75,7 @@ export class WebRobo8 {
                 data: []
             };
             try {
+                const sleep = (time) => new Promise((p) => setTimeout(p, time));
                 this.browser = yield this.createBrowser().catch(value => { throw new Error(value); });
                 this.page = yield this.createPage().catch(value => { throw new Error(value); });
                 for (let i = 0; i < this.prompts.length; i++) {
@@ -86,6 +89,7 @@ export class WebRobo8 {
                         text: yield this.page.$eval(this.prompts[i].selector, (el) => el.innerText),
                         jsCode: jsCode
                     };
+                    yield sleep(this.prompts[i].sleepTime * 1000);
                     targetElem = '';
                     jsCode = '';
                 }
