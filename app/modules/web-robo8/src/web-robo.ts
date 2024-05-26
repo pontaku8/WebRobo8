@@ -13,14 +13,14 @@ export class WebRobo8
   }[]
   browser: any
   page: any
-  promptCode: string
+  id: number
   
   constructor(init :Partial<WebRobo8>) 
   {
     
     this.url = init.url?? ''
     this.prompts = init.prompts?? []
-    this.promptCode = init.promptCode?? ''
+    this.id = init.id?? 0
     
     this.prompts = this.prompts.map(v => 
     {
@@ -92,13 +92,13 @@ export class WebRobo8
     let jsCode: string = ''
 
     let output: {
-      promptCode: string,
+      id: number,
       data: {
         text: string,
         jsCode: string
       }[]
     } = {
-      promptCode: this.promptCode,
+      id: this.id,
       data: []
     }
 
@@ -137,7 +137,7 @@ export class WebRobo8
         {
           errors: {
             message: e.message,
-            promptCode: this.promptCode,
+            id: this.id,
             jsCode: jsCode
           }
         }

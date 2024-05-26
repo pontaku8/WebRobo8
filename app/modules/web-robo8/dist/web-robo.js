@@ -15,7 +15,7 @@ export class WebRobo8 {
         var _a, _b, _c;
         this.url = (_a = init.url) !== null && _a !== void 0 ? _a : '';
         this.prompts = (_b = init.prompts) !== null && _b !== void 0 ? _b : [];
-        this.promptCode = (_c = init.promptCode) !== null && _c !== void 0 ? _c : '';
+        this.id = (_c = init.id) !== null && _c !== void 0 ? _c : 0;
         this.prompts = this.prompts.map(v => {
             if (!v.selector)
                 v.selector = '*';
@@ -71,7 +71,7 @@ export class WebRobo8 {
             let targetElem = '';
             let jsCode = '';
             let output = {
-                promptCode: this.promptCode,
+                id: this.id,
                 data: []
             };
             try {
@@ -102,7 +102,7 @@ export class WebRobo8 {
                 throw new RoboError({
                     errors: {
                         message: e.message,
-                        promptCode: this.promptCode,
+                        id: this.id,
                         jsCode: jsCode
                     }
                 });

@@ -22,7 +22,7 @@ GOOGLE_API_KEY="...." -> GOOGLE_API_KEY="abcd"
 ```
 docker-compose up
 ```
-RPAロボを動かすサンプルページに「sample.json」をプロンプトとして実行する。
+ロボを動かすサンプルページに「sample.json」をプロンプトとして実行する。
 サンプルページ、実行コマンド、プロンプトの内容は以下になります。
 - サンプルページ
 ```
@@ -30,7 +30,7 @@ http://localhost:3000/sample
 ```
 - 実行コマンド
 ```
-curl -H "Content-Type: application/json" --data @sample.json http://localhost:3000/prompt
+curl -H "Content-Type: application/json" --data @sample.json http://localhost:3000/webrobo8
 ```
 - プロンプト内容
 ```
@@ -39,15 +39,15 @@ curl -H "Content-Type: application/json" --data @sample.json http://localhost:30
 - こちらのリンクをクリックする
 ```
 
-実行コマンドのレスポンスからpromptCodeを取得する。
+実行コマンドのレスポンスからロボIDを取得する。
 ```
-[{"status":"success","message":"OK","data":[{"promptCode":"ZrNB13rvDT"}]}]   
+{"message":"OK","data":[{"id":"1"}]}
 ```
-promptCodeを指定して、サンプルページのRPAロボ動作後のテキストを取得する。
+ロボIDを指定して、サンプルページのロボ動作後のテキストを取得する。
 ```
-curl -v http://localhost:3000/prompt/ZrNB13rvDT
+curl -v http://localhost:3000/webrobo8/1
 
-{"status":"done","data":[{"text":"こちら\n名前 \n電話番号 \nぽんたく 090000000"
+{"message": "OK","data": [{"id": "5", "status": "done","outputData":
 続く...
 ```
 - ロボ動作前のサンプルページのテキスト。
@@ -65,117 +65,122 @@ curl -v http://localhost:3000/prompt/ZrNB13rvDT
 090000000
 ```
 
-# Prompt API
 ## エンドポイント一覧
 ```shell
-GET /prompt
-GET /prompt/{promptCode}
-POST /prompt
-DELETE /prompt
+GET /webrobo8
+GET /webrobo8/{id}
+POST /webrobo8
+DELETE /webrobo8
+DELETE /webrobo8/{id}
 ```
 
-## プロンプトの実行結果一覧を取得する
+## ロボ動作結果一覧を取得する
 エンドポイント
 ```shell
-GET /prompt
+GET /webrobo8
 ```
 リクエストの例
 ```shell
-curl -X GET http://localhost:3000/prompt
+curl -X GET http://localhost:3000/webrobo8
 ```
 ### レスポンス
 レスポンス例
 ```json
-[
+{
+   "message": "OK",
+   "data": [
     {
-        "promptCode": "Zxb5rmAoq8",
-        "status": "done",
-        "data": [
-            {
-                "text": "名前 \n電話番号 \nあかさか 090000000\n送信",
-                "jsCode": "\n// 名前を入力ボックスに設定\ndocument.querySelector('.test-name')....続く"
-            },
-            {
-                "text": "性別 男性 女性\n生年月日 \n2024\n2023\n2022\n .... 女性 2024331",
-                "jsCode": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]')...続く"
-            }
-        ],
-        "message": "OK"
+      "id": "1",
+      "status": "done",
+      "outputData": [
+        {
+          "text": "名前 \n電話番号 \nあかさか 090000000\n送信",
+          "jsCode": "\n// 名前を入力ボックスに設定\ndocument.querySelector('.test-name')....続く"
+        },
+        {
+          "text": "性別 男性 女性\n生年月日 \n2024\n2023\n2022\n .... 女性 2024331",
+          "jsCode": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]')...続く"
+        }
+      ],
     },
     {
-        "promptCode": "3rjxV7HIsy",
-        "status": "done"
+      "id": "2",
+      "status": "done"
 ....続く
 ```
-promptCode: <code style="color:gray">String</code><br>
-プロンプトの識別コード
+data.*.id: <code style="color:gray">Number</code><br>
+ロボID
 - - -
-status: <code style="color:gray">String</code><br>
-プロンプトの進行状況
+data.*.status: <code style="color:gray">String</code><br>
+ロボの進行状況
 - - -
-data.*.text: <code style="color:gray">String</code><br>
-プロンプト実行後の対象ページのテキスト
+data. * .outputData. * .text: <code style="color:gray">String</code><br>
+ロボの動作後の対象ページのテキスト
 - - -
-data.*.jsCode: <code style="color:gray">String</code><br>
+data. * .outputData. * .jsCode: <code style="color:gray">String</code><br>
 ロボが実行したjavascriptコード
 - - -
 message: <code style="color:gray">String</code><br>
 リクエスト結果メッセージ
 - - -
 
-## プロンプトの実行結果を取得する
+## ロボ動作結果を取得する
 エンドポイント
 ```shell
-GET /prompt/{promptCode}
+GET /webrobo8/{id}
 ```
 リクエストの例
 ```shell
-curl -X GET http://localhost:3000/prompt/t77liZeCXW
+curl -X GET http://localhost:3000/webrobo8/1
 ```
 ### パスパラメータ
 - - -
-promptCode: <code style="color:gray">String</code><br>
-プロンプトの識別コード
+id: <code style="color:gray">Number</code><br>
+ロボID
 - - -
 ### レスポンス
 レスポンス例
 ```json
 {
-    "promptCode": "Zxb5rmAoq8",
-    "status": "done",
-    "data": [
-        {
+   "message": "OK",
+   "data": [
+      {
+        "id": "1",
+        "status": "done",
+        "outputData": [
+          {
             "text": "名前 \n電話番号 \nあかさか 090000000\n送信",
             "jsCode": "\n// 名前を入力ボックスに設定\ndocument.querySelector('.test-name')...続く"
-        },
-        {
+          },
+          {
             "text": "性別 男性 女性\n生年月日 ...女性 2024331",
             "jsCode": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]')...続く"
-        }
-    ],
-    "message": "OK"
-}
+          }
+        ]
+      }
+   ]
+      
 ```
-promptCode: <code style="color:gray">String</code><br>
-プロンプトの識別コード
+data.id: <code style="color:gray">Number</code><br>
+ロボID
 - - -
-status: <code style="color:gray">String</code><br>
-プロンプトの進行状況
+data.status: <code style="color:gray">String</code><br>
+ロボの進行状況
 - - -
-data.*.text: <code style="color:gray">String</code><br>
-プロンプト実行後の対象ページのテキスト
+data.outputData.text: <code style="color:gray">String</code><br>
+ロボ動作後の対象ページのテキスト
 - - -
-data.*.jsCode: <code style="color:gray">String</code><br>
+data.outputData.jsCode: <code style="color:gray">String</code><br>
 ロボが実行したjavascriptコード
 - - -
 message: <code style="color:gray">String</code><br>
 リクエスト結果メッセージ
 - - -
 
-## プロンプトを実行する
+## ロボを動かす
 エンドポイント
 ```shell
-POST /prompt
+POST /webrobo8
 ```
 リクエストの例
 ```shell
@@ -194,7 +199,7 @@ curl -X POST -H "Content-Type: application/json" -d "
         "prompt": "- 性別のラジオボタンを「女性」"....続く 
       }
     ]
-  }" http://localhost:3000/prompt
+  }" http://localhost:3000/webrobo8
 ```
 ### リクエストヘッダー
 - - -
@@ -207,7 +212,7 @@ url: <code style="color:gray">String</code><br>
 ロボを動かすページのURL
 - - -
 prompts.*.selector: <code style="color:gray">String</code><br>
-ロボ操作対象の要素<br>
+ロボ動作対象の要素<br>
 ※指定なしの場合は全ての要素が対象
 - - -
 prompts.*.sleepTime: <code style="color:gray">Number</code><br>
@@ -226,48 +231,68 @@ prompts.*.prompt: <code style="color:gray">String</code><br>
 レスポンス例
 ```json
 {
-  "status":"success",
   "message":"OK",
-  "data":[
+  "data": [
     {
-      "promptCode":"pUQjZgEVsH"
+      "id": "1"
     }
   ]
 }
 ```
-status: <code style="color:gray">String</code><br>
-プロンプトの進行状況
-- - -
-data.*.promptCode: <code style="color:gray">String</code><br>
-受け付けたプロンプトの識別コード
+data.id: <code style="color:gray">String</code><br>
+受け付けたロボID
 - - -
 message: <code style="color:gray">String</code><br>
 リクエスト結果メッセージ
 - - -
 
-## プロンプトの実行結果を削除する
+## ロボ動作結果を全て削除する
 エンドポイント
 ```shell
-DELETE /prompt
+DELETE /webrobo8
 ```
 リクエストの例
 ```shell
-curl -X DELETE http://localhost:3000/prompt
+curl -X DELETE http://localhost:3000/webrobo8
 ```
 ### レスポンス
 レスポンス例
 ```json
 {
-  "status":"success",
   "message":"OK",
 }
 ```
-status: <code style="color:gray">String</code><br>
-プロンプトの進行状況
-- - -
 message: <code style="color:gray">String</code><br>
 リクエスト結果メッセージ
 - - -
+
+
+## ロボ動作結果を削除する
+エンドポイント
+```shell
+DELETE /webrobo8/{id}
+```
+リクエストの例
+```shell
+curl -X DELETE http://localhost:3000/webrobo8/1
+```
+### パスパラメータ
+- - -
+id: <code style="color:gray">Number</code><br>
+ロボID
+- - -
+
+### レスポンス
+レスポンス例
+```json
+{
+  "message":"OK",
+}
+```
+message: <code style="color:gray">String</code><br>
+リクエスト結果メッセージ
+- - -
+
 
 # ご利用に関して
 自由にご利用できますが、バグなどによる損害の責任は負いかねますでご自身の判断でご利用ください。*:smile:*
