@@ -8,10 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-export class GenAi {
+export class GenAiJsCode {
     constructor(init) {
-        var _a;
+        var _a, _b;
         this.prompt = (_a = init.prompt) !== null && _a !== void 0 ? _a : '';
+        this.pageContent = (_b = init.pageContent) !== null && _b !== void 0 ? _b : '';
         this.genai = new ChatGoogleGenerativeAI({
             model: 'gemini-pro',
             maxOutputTokens: 2048,
@@ -24,7 +25,11 @@ export class GenAi {
                 [
                     'human',
                     `
+          コンテンツのHTMLを解析して、操作のjavascriptコードを上から順に生成してください。※javascriptコードのみ生成
+          [操作]
           ${this.prompt}
+          [コンテンツ]
+          ${this.pageContent}
           `,
                 ],
             ]);
@@ -40,6 +45,9 @@ export class GenAi {
             if (!this.isValid())
                 return '';
             yield this.invoke();
+            this.generated = this.generated.replace("```", "");
+            this.generated = this.generated.replace("javascript", "");
+            this.generated = this.generated.replace("```", "");
             return this.generated;
         });
     }

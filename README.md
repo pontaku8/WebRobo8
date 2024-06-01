@@ -190,11 +190,13 @@ curl -X POST -H "Content-Type: application/json" -d "
     "prompts": [
       { 
         "selector": ".test-a", 
+        "to": "browser\&ai",
         "sleepTime": 3,
         "prompt": "- 名前の入力ボックスに「あかさか」と入力する"....続く 
       },
       { 
-        "selector": ".test-b", 
+        "selector": ".test-b",
+        "to": "browser\&ai", 
         "sleepTime": 3,
         "prompt": "- 性別のラジオボタンを「女性」"....続く 
       }
@@ -214,6 +216,17 @@ url: <code style="color:gray">String</code><br>
 prompts.*.selector: <code style="color:gray">String</code><br>
 ロボ動作対象の要素<br>
 ※指定なしの場合は全ての要素が対象
+- - -
+prompts.*.to: <code style="color:gray">String</code><br>
+ロボ動作種類<br>
+- browser&ai<br>
+AIが生成したJSコードをロボが実行
+- ai<br>
+AIのみ実行
+- browser<br>
+JSコードをロボが実行<br>
+※使用例は、sample.jsonを確認ください。
+
 - - -
 prompts.*.sleepTime: <code style="color:gray">Number</code><br>
 スリープ時間<br>

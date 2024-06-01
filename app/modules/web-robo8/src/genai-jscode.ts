@@ -1,15 +1,17 @@
 
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 
-export class GenAi
+export class GenAiJsCode 
 {
   prompt: string
+  pageContent: string
   genai: ChatGoogleGenerativeAI
   generated: string
 
-  constructor(init :Partial<GenAi>) 
+  constructor(init :Partial<GenAiJsCode>) 
   {
     this.prompt = init.prompt ?? ''
+    this.pageContent = init.pageContent ?? ''
     this.genai = new ChatGoogleGenerativeAI(
       {
         model: 'gemini-pro',
@@ -26,7 +28,11 @@ export class GenAi
         [
           'human',
           `
+          コンテンツのHTMLを解析して、操作のjavascriptコードを上から順に生成してください。※javascriptコードのみ生成
+          [操作]
           ${this.prompt}
+          [コンテンツ]
+          ${this.pageContent}
           `,
         ],
       ]
@@ -45,6 +51,10 @@ export class GenAi
     if (!this.isValid()) return ''
     
     await this.invoke()
+    this.generated = this.generated.replace("```", "")
+    this.generated = this.generated.replace("javascript", "")
+    this.generated = this.generated.replace("```", "")
+  
     return this.generated 
   }
 
