@@ -20,6 +20,7 @@ export class WebRobo8
     prompt: string,
     sleepTime: number,
     to: string,
+    outputSelector: string
   }[]
   browser: any
   page: any
@@ -47,6 +48,7 @@ export class WebRobo8
       if (!prompt.selector) prompt.selector = '*'
       if (!prompt.sleepTime) prompt.sleepTime = 0
       if (!prompt.to) prompt.to = this.PROMPT_TO_BROWSER_AI
+      if (!prompt.outputSelector) prompt.outputSelector = '*'
 
       return prompt
     })
@@ -151,51 +153,51 @@ export class WebRobo8
     )
     let text = await genAi.generate()
     return text
-
   }
 
 
   public async output(): Promise<object>
   {
     if (!this.isValid()) return {}
-
     
     try 
     {
-      const sleep = (time: number) => new Promise((p) => setTimeout(p, time));
       this.browser = await this.createBrowser().catch(value => { throw new Error(value) })
       this.page = await this.createPage().catch(value => { throw new Error(value) })
 
       for (let i = 0; i < this.prompts.length; i++) 
       {
-
         if (this.prompts[i].to != this.PROMPT_TO_BROWSER_AI 
         &&  this.prompts[i].to != this.PROMPT_TO_AI
         &&  this.prompts[i].to != this.PROMPT_TO_BROWSER) throw new Error('invalid prompt.to')
-
+     
         let text: string = ""
         this.jsCode = ""
-        if (this.prompts[i].to == this.PROMPT_TO_BROWSER_AI) {
+        if (this.prompts[i].to == this.PROMPT_TO_BROWSER_AI) 
+        {
           await this.execBroserAi(this.prompts[i]).catch(value => { throw new Error(value) })
-          text = await this.page.$eval(this.prompts[i].selector, (el: Element) => (el as HTMLElement).innerText)
+          await this.sleep(this.prompts[i].sleepTime * 1000)
+          text = await this.page.$eval(this.prompts[i].outputSelector, (el: Element) => (el as HTMLElement).innerText)
         }
-
-        if (this.prompts[i].to == this.PROMPT_TO_AI) {
+     
+        if (this.prompts[i].to == this.PROMPT_TO_AI) 
+        {
           text = await this.execAi(this.prompts[i]).catch(value => { throw new Error(value) })
         }
 
-        if (this.prompts[i].to == this.PROMPT_TO_BROWSER) {
+        if (this.prompts[i].to == this.PROMPT_TO_BROWSER) 
+        {
           this.jsCode = this.prompts[i].prompt
           await this.execJsCode().catch(value => { throw new Error(value) })
-          text = await this.page.$eval(this.prompts[i].selector, (el: Element) => (el as HTMLElement).innerText)
+          this.sleep(this.prompts[i].sleepTime * 1000)
+          text = await this.page.$eval(this.prompts[i].outputSelector, (el: Element) => (el as HTMLElement).innerText)
         }
-        
-        this.outputData.data[i] = {
+
+        this.outputData.data[i] = 
+        {
           text: text,
           jsCode: this.jsCode
         }
-
-        await sleep(this.prompts[i].sleepTime * 1000)
         this.jsCode = ''
       }
     
@@ -216,6 +218,11 @@ export class WebRobo8
       )
     }
     return this.outputData
+  }
+
+  private sleep(time: number)
+  {
+    return new Promise((p) => setTimeout(p, time))
   }
 
 }

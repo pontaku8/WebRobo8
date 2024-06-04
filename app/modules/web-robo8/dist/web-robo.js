@@ -32,6 +32,8 @@ export class WebRobo8 {
                 prompt.sleepTime = 0;
             if (!prompt.to)
                 prompt.to = this.PROMPT_TO_BROWSER_AI;
+            if (!prompt.outputSelector)
+                prompt.outputSelector = '*';
             return prompt;
         });
     }
@@ -119,7 +121,6 @@ export class WebRobo8 {
             if (!this.isValid())
                 return {};
             try {
-                const sleep = (time) => new Promise((p) => setTimeout(p, time));
                 this.browser = yield this.createBrowser().catch(value => { throw new Error(value); });
                 this.page = yield this.createPage().catch(value => { throw new Error(value); });
                 for (let i = 0; i < this.prompts.length; i++) {
@@ -131,7 +132,8 @@ export class WebRobo8 {
                     this.jsCode = "";
                     if (this.prompts[i].to == this.PROMPT_TO_BROWSER_AI) {
                         yield this.execBroserAi(this.prompts[i]).catch(value => { throw new Error(value); });
-                        text = yield this.page.$eval(this.prompts[i].selector, (el) => el.innerText);
+                        yield this.sleep(this.prompts[i].sleepTime * 1000);
+                        text = yield this.page.$eval(this.prompts[i].outputSelector, (el) => el.innerText);
                     }
                     if (this.prompts[i].to == this.PROMPT_TO_AI) {
                         text = yield this.execAi(this.prompts[i]).catch(value => { throw new Error(value); });
@@ -139,13 +141,14 @@ export class WebRobo8 {
                     if (this.prompts[i].to == this.PROMPT_TO_BROWSER) {
                         this.jsCode = this.prompts[i].prompt;
                         yield this.execJsCode().catch(value => { throw new Error(value); });
-                        text = yield this.page.$eval(this.prompts[i].selector, (el) => el.innerText);
+                        this.sleep(this.prompts[i].sleepTime * 1000);
+                        text = yield this.page.$eval(this.prompts[i].outputSelector, (el) => el.innerText);
                     }
-                    this.outputData.data[i] = {
-                        text: text,
-                        jsCode: this.jsCode
-                    };
-                    yield sleep(this.prompts[i].sleepTime * 1000);
+                    this.outputData.data[i] =
+                        {
+                            text: text,
+                            jsCode: this.jsCode
+                        };
                     this.jsCode = '';
                 }
                 yield this.close();
@@ -162,5 +165,8 @@ export class WebRobo8 {
             }
             return this.outputData;
         });
+    }
+    sleep(time) {
+        return new Promise((p) => setTimeout(p, time));
     }
 }

@@ -4,22 +4,26 @@
   "prompts":[
      {
       "selector": ".test-a",
+      "outputSelector": ".test-a",
       "to": "browser&ai",
       "sleepTime": 1,
       "prompt": "\n          - 名前の入力ボックスに「ぽんたく」と入力する\n          - 電話番号の入力ボックスに「090000000」と入力する\n          - こちらのリンクをクリックする\n        "
      },
      {
       "selector": ".test-b",
+      "outputSelector": ".test-a",
       "to": "browser&ai",
       "sleepTime": 1,
       "prompt": "\n          - 性別のラジオボタンを「女性」を選択\n          - 生年月日「2024/3/31」を選択する\n          - 送信のボタンをクリックする\n        "
      },
      {
+      "outputSelector": ".test-a",
       "to": "ai",
       "sleepTime": 1,
       "prompt": "\n以下の文言1に「ぽんたく」という文字があれば「OK」だけ文字を生成してください。\n[文言1]\n[prompt1]"
      },
      {
+      "outputSelector": ".test-a",
       "to": "browser",
       "sleepTime": 1,
       "prompt": "\ndocument.querySelector('input[name=\"gender\"][value=\"2\"]').checked = true;\ndocument.querySelector('.birthday-year').value = '2024';\ndocument.querySelector('.birthday-month').value = '3';\ndocument.querySelector('.birthday-day').value = '31';\ndocument.querySelector('.test-btn').click();\n"

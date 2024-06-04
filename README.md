@@ -217,6 +217,10 @@ prompts.*.selector: <code style="color:gray">String</code><br>
 ロボ動作対象の要素<br>
 ※指定なしの場合は全ての要素が対象
 - - -
+prompts.*.outputSelector: <code style="color:gray">String</code><br>
+ロボ動作後の対象要素<br>
+※指定なしの場合は全ての要素が対象
+- - -
 prompts.*.to: <code style="color:gray">String</code><br>
 ロボ動作種類<br>
 - browser&ai<br>
@@ -225,12 +229,13 @@ AIが生成したJSコードをロボが実行
 AIのみ実行
 - browser<br>
 JSコードをロボが実行<br>
-※使用例は、sample.jsonを確認ください。
+※使用例は、sample.jsonを確認ください
 
 - - -
 prompts.*.sleepTime: <code style="color:gray">Number</code><br>
 スリープ時間<br>
-※指定なしの場合は0秒
+※指定なしの場合は0秒<br>
+※ロボ動作種類が「browser&ai」「browser」の場合のみ使用可能
 - - -
 prompts.*.prompt: <code style="color:gray">String</code><br>
 ロボへの指示例<br>
