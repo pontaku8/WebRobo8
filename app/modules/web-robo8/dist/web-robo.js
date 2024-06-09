@@ -21,6 +21,7 @@ export class WebRobo8 {
         this.prompts = (_b = init.prompts) !== null && _b !== void 0 ? _b : [];
         this.id = (_c = init.id) !== null && _c !== void 0 ? _c : 0;
         this.jsCode = '';
+        this.webRobo8Close = false;
         this.outputData = {
             id: this.id,
             data: []
@@ -79,8 +80,11 @@ export class WebRobo8 {
     }
     close() {
         return __awaiter(this, void 0, void 0, function* () {
+            if (this.webRobo8Close)
+                return;
             yield this.page.close();
             yield this.browser.close();
+            this.webRobo8Close = true;
         });
     }
     execBroserAi(prompt) {
@@ -150,6 +154,8 @@ export class WebRobo8 {
                             jsCode: this.jsCode
                         };
                     this.jsCode = '';
+                    if (this.webRobo8Close)
+                        throw new Error('closed webrobo8');
                 }
                 yield this.close();
             }
