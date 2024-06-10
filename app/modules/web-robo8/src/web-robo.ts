@@ -27,6 +27,7 @@ export class WebRobo8
   id: number
   jsCode: string
   outputData: Output
+  webRobo8Close: boolean
 
   PROMPT_TO_BROWSER_AI: string = 'browser&ai'
   PROMPT_TO_BROWSER: string = 'browser'
@@ -38,6 +39,7 @@ export class WebRobo8
     this.prompts = init.prompts?? []
     this.id = init.id?? 0
     this.jsCode = ''
+    this.webRobo8Close = false
     this.outputData = {
       id: this.id,
       data: []
@@ -100,17 +102,19 @@ export class WebRobo8
 
     await this.page.evaluate((jsCode: string) => 
       { 
-        eval(`${jsCode}`);
+        eval(`${jsCode}`)
       }, 
       this.jsCode
     )
 
   }
 
-  private async close()
+  public async close()
   {
-    await this.page.close()
+    if (this.webRobo8Close) return
+    // await this.page.close()
     await this.browser.close()
+    this.webRobo8Close = true
   }
 
   private async execBroserAi(prompt: any)
@@ -135,7 +139,7 @@ export class WebRobo8
     let matches: string[] = [];
     while ((match = regexp.exec(promptToAi)) !== null) 
     {
-      matches.push(match[1]);
+      matches.push(match[1])
     }
 
     matches.forEach((promptNo: string) => 
@@ -199,6 +203,9 @@ export class WebRobo8
           jsCode: this.jsCode
         }
         this.jsCode = ''
+
+        if (this.webRobo8Close) throw new Error('closed webrobo8')
+
       }
     
       await this.close()

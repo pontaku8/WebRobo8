@@ -5,19 +5,23 @@ import { WebRobo8 } from './modules/web-robo8/index.js'
 import { check, validationResult } from 'express-validator'
 
 const app = express()
-const redis =new Redis(
+const redis = new Redis(
   {
     port: 6379, 
     host: 'redis'
   }
 )
 
+let webrobo8 = {}
 const ROBO8_CASHE_HASH_KEY = 'robo8'
 const ROBO8_CASHE_ID_KEY ='robo_id'
 const ROBO8_FULL = 10
 const STATUS_WAIT = 'wait'
 const STATUS_ERROR = 'error'
 const STATUS_DONE = 'done'
+
+
+
 
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -86,36 +90,47 @@ router.post('/webrobo8', async (req, res) =>
 
   await redis.hset(ROBO8_CASHE_HASH_KEY, id, JSON.stringify( { id: id, status: STATUS_WAIT, outputData: [{ text: 'please wait', jsCode: '' }] } ))
 
-  new WebRobo8(
+  webrobo8[id] = new WebRobo8(
     {
       url: req.body.url,
       prompts: req.body.prompts,
       id: id
     }
   )
-  .output()
-  .then(async (value) => 
-  {
-    console.log('succss')
-    await redis.hset(ROBO8_CASHE_HASH_KEY, value.id, JSON.stringify(
-      { 
-        id: value.id,
-        status: STATUS_DONE,
-        outputData: value.data
-      }
-    ))
-  })
-  .catch(async (value) => 
-  {
-    console.log('error')
-    await redis.hset(ROBO8_CASHE_HASH_KEY, value.errors.id, JSON.stringify(
-      { 
-        id: value.errors.id,
-        status: STATUS_ERROR,
-        outputData: [{ text: value.errors.message, jsCode: value.errors.jsCode }]
-      }
-    ))
-  })
+
+  webrobo8[id].output()
+              .then(async (value) => 
+              {
+                console.log('succss')
+
+                let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.id)
+                if (!hasOutputData) return
+                
+                await redis.hset(ROBO8_CASHE_HASH_KEY, value.id, JSON.stringify(
+                  { 
+                    id: value.id,
+                    status: STATUS_DONE,
+                    outputData: value.data
+                  }
+                ))
+              })
+              .catch(async (value) => 
+              {
+                console.log('error')
+                if (!value.errors) return
+
+
+                let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.errors.id)
+                if (!hasOutputData) return
+
+                await redis.hset(ROBO8_CASHE_HASH_KEY, value.errors.id, JSON.stringify(
+                  { 
+                    id: value.errors.id,
+                    status: STATUS_ERROR,
+                    outputData: [{ text: value.errors.message, jsCode: value.errors.jsCode }]
+                  }
+                ))
+              })
 
   res.json(
     { 
@@ -136,6 +151,13 @@ app.delete('/webrobo8', async (req, res) =>
                         {
                           return "NG"
                         })
+  
+  Object.keys(webrobo8).forEach(async (k) => 
+  {
+    if (webrobo8[k]) await webrobo8[k].close()
+  })
+
+  webrobo8 = {}
 
   if (message == "OK") 
   {
@@ -160,7 +182,12 @@ app.delete('/webrobo8/:id', async (req, res) =>
                         {
                           return "NG"
                         })
-                        
+  
+  if (webrobo8[req.params.id]) {
+    await webrobo8[req.params.id].close()
+    delete webrobo8[req.params.id]
+  }
+          
   res.json(
     { 
       message: message
