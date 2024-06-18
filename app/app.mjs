@@ -10,6 +10,11 @@ import 'winston-daily-rotate-file';
 
 const rTracerFormat = printf((info) => {
   const rid = rTracer.id()
+
+  if (!rid)
+  {
+    return `[${info.timestamp}] ${info.level}: ${info.message}`
+  }
   return `[${info.timestamp}] ${rid} ${info.level}: ${info.message}`
 })
 
@@ -35,10 +40,12 @@ const redis = new Redis(
 )
 app.use(rTracer.expressMiddleware())
 
-let webrobo8 = {}
+
 const ROBO8_CASHE_HASH_KEY = 'robo8'
-const ROBO8_CASHE_ID_KEY ='robo_id'
-const ROBO8_FULL = 10
+const ROBO8_CASHE_ID_KEY = 'robo_id'
+const ROBO8_CASHE_LIST ='robo_list'
+const PROMPT_CASHE_HASH_KEY = 'prompt'
+const ROBO8_FULL = 1000
 const STATUS_WAIT = 'wait'
 const STATUS_ERROR = 'error'
 const STATUS_DONE = 'done'
@@ -123,7 +130,7 @@ router.post('/webrobo8', async (req, res) =>
     return res.status(400).json({ errors: result.array() })
   }
   
-  const robo8Length = await redis.hlen(ROBO8_CASHE_HASH_KEY)
+  const robo8Length = await redis.llen(ROBO8_CASHE_LIST)
   const isRobo8Full = (ROBO8_FULL < robo8Length) ? true : false
   if (isRobo8Full) 
   {
@@ -133,60 +140,18 @@ router.post('/webrobo8', async (req, res) =>
 
   await redis.incr(ROBO8_CASHE_ID_KEY)
   let id = await redis.get(ROBO8_CASHE_ID_KEY)
-  await redis.hset(ROBO8_CASHE_HASH_KEY, id, JSON.stringify( { id: id, status: STATUS_WAIT, outputData: [{ text: 'please wait', jsCode: '' }] } ))
+  await redis.rpush(ROBO8_CASHE_LIST, id)
 
-  webrobo8[id] = new WebRobo8(
+  await redis.hset(PROMPT_CASHE_HASH_KEY, id, JSON.stringify(
     {
       url: req.body.url,
       prompts: req.body.prompts,
       id: id
     }
-  )
+  ))
 
-  webrobo8[id].output()
-              .then(async (value) => 
-              {
-                
-                let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.id)
-                if (!hasOutputData) 
-                {
-                  logger.info(`outputdata is empty ${value.id}`)
-                  return
-                }
-                const outputData = { 
-                  id: value.id,
-                  status: STATUS_DONE,
-                  outputData: value.data
-                }
-                logger.info(`succss ${JSON.stringify(outputData)}`)
+  await redis.hset(ROBO8_CASHE_HASH_KEY, id, JSON.stringify( { id: id, status: STATUS_WAIT, outputData: [{ text: 'please wait', jsCode: '' }] } ))
 
-                await redis.hset(ROBO8_CASHE_HASH_KEY, value.id, JSON.stringify(outputData))
-              })
-              .catch(async (value) => 
-              {
-                
-                if (!value.errors) 
-                {
-                  logger.error(`error is empty`)
-                  return
-                }
-
-                let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.errors.id)
-                if (!hasOutputData) 
-                {
-                  logger.error(`outputdata is empty ${value.errors.id}`)
-                  return
-                }
-
-                const outputData = {
-                  id: value.errors.id,
-                  status: STATUS_ERROR,
-                  outputData: [{ text: value.errors.message, jsCode: value.errors.jsCode }]
-                }
-
-                logger.info(`error ${JSON.stringify(outputData)}`)
-                await redis.hset(ROBO8_CASHE_HASH_KEY, value.errors.id, JSON.stringify(outputData))
-              })
 
   res.json(
     { 
@@ -208,14 +173,6 @@ app.delete('/webrobo8', async (req, res) =>
                           logger.info(`error ${JSON.stringify(error)}`)
                           return "NG"
                         })
-  
-  Object.keys(webrobo8).forEach(async (k) => 
-  {
-    if (webrobo8[k]) await webrobo8[k].close()
-  })
-
-  webrobo8 = {}
-
   if (message == "OK") 
   {
     await redis.set(ROBO8_CASHE_ID_KEY, 0)
@@ -240,11 +197,6 @@ app.delete('/webrobo8/:id', async (req, res) =>
                           logger.info(`error ${JSON.stringify(error)}`)
                           return "NG"
                         })
-  
-  if (webrobo8[req.params.id]) {
-    await webrobo8[req.params.id].close()
-    delete webrobo8[req.params.id]
-  }
           
   res.json(
     { 
@@ -263,3 +215,77 @@ app.listen(3000, () =>
 {
   console.log('Server listening on port 3000')
 })
+
+let busy = false
+const webroboQueue = async() => 
+{
+
+
+  if (busy) 
+  {
+    logger.info(`busy`)
+    return
+  }
+
+  const ids = await redis.lrange(ROBO8_CASHE_LIST, 0, 0)
+  const id = ids[0]
+  let prompt = await redis.hget(PROMPT_CASHE_HASH_KEY, id)
+
+  if (!prompt) 
+  {
+    logger.info(`prompt is empty ${id}`)
+    return
+  }
+  
+  busy = true
+  const webrobo8 = new WebRobo8(JSON.parse(prompt))
+  webrobo8.output()
+          .then(async (value) => 
+          {
+            busy = false
+            await redis.lpop(ROBO8_CASHE_LIST)
+            let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.id)
+            if (!hasOutputData) 
+            {
+              logger.info(`outputdata is empty ${value.id}`)
+              return
+            }
+            const outputData = { 
+              id: value.id,
+              status: STATUS_DONE,
+              outputData: value.data
+            }
+            logger.info(`succss ${JSON.stringify(outputData)}`)
+
+            await redis.hset(ROBO8_CASHE_HASH_KEY, value.id, JSON.stringify(outputData))
+            
+          })
+          .catch(async (value) => 
+          {
+            busy = false
+            await redis.lpop(ROBO8_CASHE_LIST)
+            if (!value.errors) 
+            {
+              logger.error(`error is empty`)
+              return
+            }
+
+            let hasOutputData = await redis.hget(ROBO8_CASHE_HASH_KEY, value.errors.id)
+            if (!hasOutputData) 
+            {
+              logger.error(`outputdata is empty ${value.errors.id}`)
+              return
+            }
+
+            const outputData = {
+              id: value.errors.id,
+              status: STATUS_ERROR,
+              outputData: [{ text: value.errors.message, jsCode: value.errors.jsCode }]
+            }
+
+            logger.info(`error ${JSON.stringify(outputData)}`)
+            await redis.hset(ROBO8_CASHE_HASH_KEY, value.errors.id, JSON.stringify(outputData))
+          })
+}
+
+setInterval(webroboQueue, 1500);
