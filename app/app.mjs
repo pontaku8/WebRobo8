@@ -6,7 +6,9 @@ import { check, validationResult } from 'express-validator'
 import winston from 'winston'
 const { combine, timestamp, printf } = winston.format;
 import rTracer from 'cls-rtracer'
-import 'winston-daily-rotate-file';
+import 'winston-daily-rotate-file'
+
+import axios from 'axios'
 
 const rTracerFormat = printf((info) => {
   const rid = rTracer.id()
@@ -17,6 +19,7 @@ const rTracerFormat = printf((info) => {
   }
   return `[${info.timestamp}] ${rid} ${info.level}: ${info.message}`
 })
+
 
 const logger = winston.createLogger({
   level: 'info',
@@ -211,10 +214,33 @@ app.get('/sample', (req, res) =>
   res.render("/var/www/app/views/index.ejs");
 })
 
+
+router.post('/webhook_sample', async (req, res) => 
+{
+  logger.info(`webhook_sample`)
+  res.json({})
+})
+
+
 app.listen(3000, () => 
 {
   console.log('Server listening on port 3000')
 })
+
+
+const sendWebhook = async(id, tag) => 
+{
+  const data = { webroboId : id }
+  axios.post(process.env.WEBHOOK_URL, data)
+      .then(() => 
+      {
+        logger.info(`${tag} send webhook ${id}`)
+      })
+      .catch(err => 
+      {
+        logger.info(`${tag} send error webhook ${id}`)
+      })
+}
 
 let busy = false
 const webroboQueue = async() => 
@@ -258,7 +284,8 @@ const webroboQueue = async() =>
             logger.info(`succss ${JSON.stringify(outputData)}`)
 
             await redis.hset(ROBO8_CASHE_HASH_KEY, value.id, JSON.stringify(outputData))
-            
+
+            sendWebhook(value.id, 'webrobo success')
           })
           .catch(async (value) => 
           {
@@ -285,6 +312,9 @@ const webroboQueue = async() =>
 
             logger.info(`error ${JSON.stringify(outputData)}`)
             await redis.hset(ROBO8_CASHE_HASH_KEY, value.errors.id, JSON.stringify(outputData))
+
+            sendWebhook(value.errors.id, 'webrobo error')
+
           })
 }
 
