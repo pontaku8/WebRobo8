@@ -311,6 +311,15 @@ message: <code style="color:gray">String</code><br>
 リクエスト結果メッセージ
 - - -
 
+## ロボ動作完了結果を通知する
+通知先を指定してロボ動作完了結果を受け取ることができます。<br>
+指定先URLは、.envファイルのWEBHOOK_URLとなります。<br>
+※POST送信となります。<br>
+(例
+```
+WEBHOOK_URL="http://localhost:3000/webhook_sample"
+```
+
 
 # ご利用に関して
 自由にご利用できますが、バグなどによる損害の責任は負いかねますでご自身の判断でご利用ください。*:smile:*
